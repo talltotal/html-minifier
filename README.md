@@ -1,4 +1,8 @@
 # HTMLMinifier
+为应用与微信小程序的 wxml 文件压缩，做了以下修改：
+1. 布尔类型的属性判断，去掉了属性名的判断，即只判断属性值为‘true’或‘false’做相应缩写
+2. 保留属性值外的的双引号‘"’
+
 
 [![NPM version](https://img.shields.io/npm/v/html-minifier.svg)](https://www.npmjs.com/package/html-minifier)
 [![Build Status](https://img.shields.io/travis/kangax/html-minifier.svg)](https://travis-ci.org/kangax/html-minifier)

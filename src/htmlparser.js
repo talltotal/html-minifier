@@ -366,7 +366,11 @@ function HTMLParser(html, handler) {
         customAssign: customAssign || '=',
         customOpen: customOpen || '',
         customClose: customClose || '',
-        quote: quote || ''
+        // quote: quote || ''
+        /**
+         * 保证属性值安全
+         */
+        quote: quote || '"'
       };
     });
 

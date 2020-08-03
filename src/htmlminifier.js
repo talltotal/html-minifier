@@ -199,11 +199,15 @@ function isStyleSheet(tag, attrs) {
   return true;
 }
 
-var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
+// var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
 var isBooleanValue = createMapFromString('true,false');
 
 function isBooleanAttribute(attrName, attrValue) {
-  return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
+  // return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
+  /**
+   * 属性值不做判断
+   */
+  return !isBooleanValue(attrValue);
 }
 
 function isUriTypeAttribute(attrName, tag) {
