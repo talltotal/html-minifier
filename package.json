@@ -1,6 +1,6 @@
 {
   "name": "@talltotal/html-minifier",
-  "description": "Highly configurable, well-tested, JavaScript-based HTML minifier.",
+  "description": "WXML minifier, forked from kangax/html-minifier.",
   "version": "4.0.1",
   "keywords": [
     "微信小程序",
