@@ -1,8 +1,11 @@
 {
   "name": "@talltotal/html-minifier",
   "description": "Highly configurable, well-tested, JavaScript-based HTML minifier.",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "keywords": [
+    "微信小程序",
+    "wxml",
+    "wxapp",
     "cli",
     "compress",
     "compressor",

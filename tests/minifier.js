@@ -2085,7 +2085,7 @@ QUnit.test('script minification', function(assert) {
   assert.equal(minify(input, { minifyJS: true }), output);
 
   input = '<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({\'gtm.start\':new Date().getTime(),event:\'gtm.js\'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!=\'dataLayer\'?\'&l=\'+l:\'\';j.async=true;j.src=\'//www.googletagmanager.com/gtm.js?id=\'+i+dl;f.parentNode.insertBefore(j,f);})(window,document,\'script\',\'dataLayer\',\'GTM-67NT\');</script>';
-  output = '<script>!function(w,d,s,l,i){w[l]=w[l]||[],w[l].push({"gtm.start":(new Date).getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=!0,j.src="//www.googletagmanager.com/gtm.js?id=GTM-67NT",f.parentNode.insertBefore(j,f)}(window,document,"script","dataLayer")</script>';
+  output = '<script>!function(w,d,s,l){w[l]=w[l]||[],w[l].push({"gtm.start":(new Date).getTime(),event:"gtm.js"});var f=d.getElementsByTagName(s)[0],j=d.createElement(s);j.async=!0,j.src="//www.googletagmanager.com/gtm.js?id=GTM-67NT",f.parentNode.insertBefore(j,f)}(window,document,"script","dataLayer")</script>';
 
   assert.equal(minify(input, { minifyJS: { mangle: false } }), output);
 
@@ -3574,4 +3574,116 @@ QUnit.test('minify Content-Security-Policy', function(assert) {
 
   input = '<meta http-equiv="content-security-policy" content="default-src \'self\'; img-src https://*;">';
   assert.equal(minify(input), input);
+});
+
+QUnit.test('minify wxapp', function(assert) {
+  var input, output;
+  function wxMinify(input) {
+    return minify(input, {
+      caseSensitive: true,
+      removeComments: true,
+      collapseWhitespace: true,
+      collapseBooleanAttributes: false,
+      removeAttributeQuotes: false,
+      preventAttributesEscaping: true,
+      keepClosingSlash: true,
+      minifyCSS: true,
+      minifyJS: true,
+      ignoreCustomFragments: [
+        /<import( *(src)=\s*)* *\/>/,
+        /<include( *(src)=\s*)* *\/>/,
+        /{{([\s\S]*?)}}/,
+      ],
+      customExpressionFragments: [
+        new RegExp('(?<={{)([\\s\\S]*?)(?=}})'),
+      ]
+    });
+  }
+
+  // 基本语法
+  input = '<!--数据绑定-->' +
+          '<view id="item-{{id}}"> {{ message }} </view>';
+  output = '<view id="item-{{id}}"> {{message}} </view>';
+  assert.equal(wxMinify(input), output);
+
+  input = '<view hidden="{{flag ? true : false}}"> Hidden </view>';
+  output = '<view hidden="{{!!flag}}">Hidden</view>';
+  assert.equal(wxMinify(input), output);
+
+  input = '<view class="classA {{ !classB ? \'a\' : \'b\' }}"> {{ message }} </view>';
+  output = '<view class="classA {{classB?\'b\':\'a\'}}"> {{message}} </view>';
+  assert.equal(wxMinify(input), output);
+
+  input = '<view> {{a + b}} + {{c}} + d </view>';
+  output = '<view> {{a+b}} + {{c}} + d</view>';
+  assert.equal(wxMinify(input), output);
+
+  input = '<view wx:for="{{[zero, 1, 2, 3, 4]}}"> {{item}} </view>';
+  output = '<view wx:for="{{[zero,1,2,3,4]}}"> {{item}} </view>';
+  assert.equal(wxMinify(input), output);
+
+  input = '<template is="objectCombine" data="{{a: 2, b: \'5\', c: true, d: d}}"></template>';
+  output = '<template is="objectCombine" data="{{a:2,b:\'5\',c:!0,d:d}}"></template>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--列表渲染-->\n' +
+          '<view wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName"> {{item}} </view>';
+  output = '<view wx:for="{{array}}" wx:for-index="idx" wx:for-item="itemName"> {{item}} </view>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<view wx:for="{{[1,2,3]}} "> {{item}} </view>';
+  output = '<view wx:for="{{[1,2,3]}} "> {{item}} </view>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--条件渲染-->\n' +
+          '<view wx:if="{{view == \'WEBVIEW\'}}"> WEBVIEW </view>\n' +
+          '<view wx:elif="{{view == \'APP\'}}"> APP </view>\n' +
+          '<view wx:else="{{view == \'MINA\'}}"> MINA </view>';
+  output = '<view wx:if="{{\'WEBVIEW\'==view}}">WEBVIEW</view><view wx:elif="{{\'APP\'==view}}">APP</view><view wx:else="{{\'MINA\'==view}}">MINA</view>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--模板-->\n' +
+          '<template name="staffName">\n' +
+          '  <view>\n' +
+          '    FirstName: {{firstName}}, LastName: {{lastName}}\n' +
+          '  </view>\n' +
+          '</template>\n' +
+          '<template is="staffName" data="{{...staffA}}"></template>\n' +
+          '<template is="staffName" data="{{...staffB}}"></template>\n' +
+          '<template is="staffName" data="{{...staffC}}"></template>';
+  output = '<template name="staffName"><view>FirstName: {{firstName}}, LastName: {{lastName}} </view></template><template is="staffName" data="{{...staffA}}"></template><template is="staffName" data="{{...staffB}}"></template><template is="staffName" data="{{...staffC}}"></template>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--引用-->\n' +
+          '<import src="item.wxml"/>\n' +
+          '<template is="item" data="{{text: \'forbar\'}}"/>\n' +
+          '<include src="header.wxml"/>';
+  output = '<import src="item.wxml"/><template is="item" data="{{text:\'forbar\'}}"/><include src="header.wxml"/>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--css压缩-->\n' +
+          '<view style="display: block; color: #000000;"> </view>';
+  output = '<view style="display:block;color:#000"></view>';
+  assert.equal(wxMinify(input), output);
+
+
+  input = '<!--wxs-->\n' +
+          '<wxs src="./../tools.wxs" module="tools" />\n' +
+          '<view> {{tools.msg}} </view>\n' +
+          '<wxs module="foo">\n' +
+          '// 注释\n' +
+          'var some_msg = "hello world";\n' +
+          'module.exports = {\n' +
+          '  msg : some_msg,\n' +
+          '}\n' +
+          '</wxs>\n' +
+          '<view> {{foo.msg}} </view>';
+  output = '<wxs src="./../tools.wxs" module="tools"/><view> {{tools.msg}} </view><wxs module="foo">var some_msg="hello world";module.exports={msg:some_msg}</wxs><view> {{foo.msg}} </view>';
+  assert.equal(wxMinify(input), output);
 });

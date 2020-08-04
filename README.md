@@ -1,7 +1,65 @@
 # HTMLMinifier
-为应用与微信小程序的 wxml 文件压缩，做了以下修改：
-1. 布尔类型的属性判断，去掉了属性名的判断，即只判断属性值为‘true’或‘false’做相应缩写
-2. 保留属性值外的的双引号‘"’
+为应用于微信小程序的 wxml 文件压缩，做了以下修改：
+1. wxs 视为 script，支持 wxs 内的 minifyJS
+2. 新增自定义表达式区域的配置，用于`{{}}`内表达式的压缩
+
+```js
+const htmlMinifier = require('@talltotal/html-minifier').minify
+
+htmlMinifier(wxmlCode, {
+  // 区分大小写
+  caseSensitive: true,
+  // 删掉注释
+  removeComments: true,
+  // 折叠空白
+  collapseWhitespace: true,
+  // 折叠布尔属性
+  collapseBooleanAttributes: false,
+  // 删除属性值的引号
+  removeAttributeQuotes: false,
+  // 防止属性值转义
+  preventAttributesEscaping: true,
+  // 在单例元素上保留尾部斜杠
+  keepClosingSlash: true,
+  // 压缩js部分
+  minifyJS: true,
+  // 压缩css部分
+  minifyCSS: true,
+  // 忽略的片段
+  ignoreCustomFragments: [
+    /<import( *(src)=\s*)* *\/>/,
+    /<include( *(src)=\s*)* *\/>/,
+    /{{([\s\S]*?)}}/,
+  ],
+  // 新增配置，{{}}区域用js表达式压缩
+  customExpressionFragments: [
+    new RegExp('(?<={{)([\\s\\S]*?)(?=}})'),
+  ]
+})
+
+
+/**
+ * 使用原版亦可，可参考以下配置
+ */
+const htmlMinifier = require('html-minifier').minify
+
+htmlMinifier(wxmlCode, {
+  caseSensitive: true,
+  removeComments: true,
+  collapseWhitespace: true,
+  collapseBooleanAttributes: false,
+  removeAttributeQuotes: false,
+  preventAttributesEscaping: true,
+  keepClosingSlash: true,
+  ignoreCustomFragments: [
+    /<wxs([\s\S]*?)<\/wxs>/,
+    /<wxs( *(src|module)=\s*)* *\/>/,
+    /<import( *(src)=\s*)* *\/>/,
+    /{{([\s\S]*?)}}/,
+  ],
+})
+
+```
 
 
 [![NPM version](https://img.shields.io/npm/v/html-minifier.svg)](https://www.npmjs.com/package/html-minifier)

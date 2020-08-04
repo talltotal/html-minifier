@@ -59,19 +59,34 @@ module.exports = function(grunt) {
 
     eslint: {
       grunt: {
-        src: 'Gruntfile.js'
+        src: 'Gruntfile.js',
+        options: {
+          fix: true
+        }
       },
       src: {
-        src: ['cli.js', 'src/**/*.js']
+        src: ['cli.js', 'src/**/*.js'],
+        options: {
+          fix: true
+        }
       },
       tests: {
-        src: ['tests/*.js', 'test.js']
+        src: ['tests/*.js', 'test.js'],
+        options: {
+          fix: true
+        }
       },
       web: {
-        src: ['assets/master.js', 'assets/worker.js']
+        src: ['assets/master.js', 'assets/worker.js'],
+        options: {
+          fix: true
+        }
       },
       other: {
-        src: ['backtest.js', 'benchmark.js']
+        src: ['backtest.js', 'benchmark.js'],
+        options: {
+          fix: true
+        }
       }
     },
 

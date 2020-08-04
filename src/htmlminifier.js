@@ -169,7 +169,7 @@ function isScriptTypeAttribute(attrValue) {
 }
 
 function isExecutableScript(tag, attrs) {
-  if (tag !== 'script') {
+  if (tag !== 'script' && tag !== 'wxs') {
     return false;
   }
   for (var i = 0, len = attrs.length; i < len; i++) {
@@ -199,15 +199,11 @@ function isStyleSheet(tag, attrs) {
   return true;
 }
 
-// var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
+var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
 var isBooleanValue = createMapFromString('true,false');
 
 function isBooleanAttribute(attrName, attrValue) {
-  // return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
-  /**
-   * 属性值不做判断
-   */
-  return !isBooleanValue(attrValue);
+  return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
 }
 
 function isUriTypeAttribute(attrName, tag) {
@@ -221,7 +217,10 @@ function isUriTypeAttribute(attrName, tag) {
     tag === 'form' && attrName === 'action' ||
     tag === 'input' && (attrName === 'src' || attrName === 'usemap') ||
     tag === 'head' && attrName === 'profile' ||
-    tag === 'script' && (attrName === 'src' || attrName === 'for')
+    tag === 'script' && (attrName === 'src' || attrName === 'for') ||
+    tag === 'wxs' && attrName === 'src' ||
+    tag === 'import' && attrName === 'src' ||
+    tag === 'include' && attrName === 'src'
   );
 }
 
@@ -539,7 +538,7 @@ function canRemoveElement(tag, attrs) {
 }
 
 function canCollapseWhitespace(tag) {
-  return !/^(?:script|style|pre|textarea)$/.test(tag);
+  return !/^(?:script|wxs|style|pre|textarea)$/.test(tag);
 }
 
 function canTrimWhitespace(tag) {
@@ -745,7 +744,7 @@ function uniqueId(value) {
   return id;
 }
 
-var specialContentTags = createMapFromString('script,style');
+var specialContentTags = createMapFromString('wxs,script,style');
 
 function createSortFns(value, options, uidIgnore, uidAttr) {
   var attrChains = options.sortAttributes && Object.create(null);
@@ -872,6 +871,54 @@ function minify(value, options, partialMarkup) {
     ignoredMarkupChunks.push(group1);
     return token;
   });
+  function minifyExpression(code) {
+    if (!code) {
+      return code;
+    }
+    var result = UglifyJS.minify(code, {
+      output: {
+        quote_style: 3
+      },
+      compress: {
+        expression: true,
+      }
+    });
+    if (result.error) {
+      throw new Error();
+    }
+
+    var resultCode = result.code.replace(/;$/, '');
+    if (!resultCode) {
+      throw new Error();
+    }
+    return resultCode;
+  }
+
+  var customExpressionFragments = (options.customExpressionFragments || []).map(function(re) {
+    return re.source;
+  });
+  if (customExpressionFragments.length) {
+    var reCustomExpression = new RegExp('\\s*(?:' + customExpressionFragments.join('|') + ')+\\s*', 'g');
+
+    value = value.replace(reCustomExpression, function(match) {
+      try {
+        return minifyExpression(match);
+      }
+      catch (err) {
+        //
+      }
+
+      try {
+        var re = minifyExpression('({' + match + '})');
+        return re.substr(2, re.length - 4);
+      }
+      catch (err) {
+        //
+      }
+
+      return match;
+    });
+  }
 
   var customFragments = options.ignoreCustomFragments.map(function(re) {
     return re.source;

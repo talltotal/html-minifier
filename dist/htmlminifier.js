@@ -1,5 +1,5 @@
 /*!
- * HTMLMinifier v4.0.0 (https://github.com/talltotal/html-minifier)
+ * HTMLMinifier v4.0.1 (https://github.com/talltotal/html-minifier)
  * Copyright 2010-2020 talltotal
  * Licensed under the MIT license
  */
@@ -24819,7 +24819,7 @@ var IS_REGEX_CAPTURING_BROKEN = false;
 var empty = makeMap('area,base,basefont,br,col,embed,frame,hr,img,input,isindex,keygen,link,meta,param,source,track,wbr');
 
 // Inline Elements
-var inline = makeMap('a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,noscript,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,svg,textarea,tt,u,var');
+var inline = makeMap('a,abbr,acronym,applet,b,basefont,bdo,big,br,button,cite,code,del,dfn,em,font,i,iframe,img,input,ins,kbd,label,map,noscript,object,q,s,samp,script,select,small,span,strike,strong,sub,sup,svg,textarea,tt,u,var,text');
 
 // Elements that you can, intentionally, leave open
 // (and which close themselves)
@@ -24829,7 +24829,7 @@ var closeSelf = makeMap('colgroup,dd,dt,li,option,p,td,tfoot,th,thead,tr,source'
 var fillAttrs = makeMap('checked,compact,declare,defer,disabled,ismap,multiple,nohref,noresize,noshade,nowrap,readonly,selected');
 
 // Special Elements (can contain anything)
-var special = makeMap('script,style');
+var special = makeMap('script,style,wxs');
 
 // HTML5 tags https://html.spec.whatwg.org/multipage/indices.html#elements-3
 // Phrasing Content https://html.spec.whatwg.org/multipage/dom.html#phrasing-content
@@ -24972,7 +24972,7 @@ function HTMLParser(html, handler) {
       var reStackedTag = reCache[stackedTag] || (reCache[stackedTag] = new RegExp('([\\s\\S]*?)</' + stackedTag + '[^>]*>', 'i'));
 
       html = html.replace(reStackedTag, function(all, text) {
-        if (stackedTag !== 'script' && stackedTag !== 'style' && stackedTag !== 'noscript') {
+        if (stackedTag !== 'wxs' && stackedTag !== 'script' && stackedTag !== 'style' && stackedTag !== 'noscript') {
           text = text
             .replace(/<!--([\s\S]*?)-->/g, '$1')
             .replace(/<!\[CDATA\[([\s\S]*?)]]>/g, '$1');
@@ -25114,11 +25114,7 @@ function HTMLParser(html, handler) {
         customAssign: customAssign || '=',
         customOpen: customOpen || '',
         customClose: customClose || '',
-        // quote: quote || ''
-        /**
-         * 保证属性值安全
-         */
-        quote: quote || '"'
+        quote: quote || ''
       };
     });
 
@@ -25583,7 +25579,7 @@ function isScriptTypeAttribute(attrValue) {
 }
 
 function isExecutableScript(tag, attrs) {
-  if (tag !== 'script') {
+  if (tag !== 'script' && tag !== 'wxs') {
     return false;
   }
   for (var i = 0, len = attrs.length; i < len; i++) {
@@ -25613,15 +25609,11 @@ function isStyleSheet(tag, attrs) {
   return true;
 }
 
-// var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
+var isSimpleBoolean = createMapFromString('allowfullscreen,async,autofocus,autoplay,checked,compact,controls,declare,default,defaultchecked,defaultmuted,defaultselected,defer,disabled,enabled,formnovalidate,hidden,indeterminate,inert,ismap,itemscope,loop,multiple,muted,nohref,noresize,noshade,novalidate,nowrap,open,pauseonexit,readonly,required,reversed,scoped,seamless,selected,sortable,truespeed,typemustmatch,visible');
 var isBooleanValue = createMapFromString('true,false');
 
 function isBooleanAttribute(attrName, attrValue) {
-  // return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
-  /**
-   * 属性值不做判断
-   */
-  return !isBooleanValue(attrValue);
+  return isSimpleBoolean(attrName) || attrName === 'draggable' && !isBooleanValue(attrValue);
 }
 
 function isUriTypeAttribute(attrName, tag) {
@@ -25635,7 +25627,10 @@ function isUriTypeAttribute(attrName, tag) {
     tag === 'form' && attrName === 'action' ||
     tag === 'input' && (attrName === 'src' || attrName === 'usemap') ||
     tag === 'head' && attrName === 'profile' ||
-    tag === 'script' && (attrName === 'src' || attrName === 'for')
+    tag === 'script' && (attrName === 'src' || attrName === 'for') ||
+    tag === 'wxs' && attrName === 'src' ||
+    tag === 'import' && attrName === 'src' ||
+    tag === 'include' && attrName === 'src'
   );
 }
 
@@ -25953,7 +25948,7 @@ function canRemoveElement(tag, attrs) {
 }
 
 function canCollapseWhitespace(tag) {
-  return !/^(?:script|style|pre|textarea)$/.test(tag);
+  return !/^(?:script|wxs|style|pre|textarea)$/.test(tag);
 }
 
 function canTrimWhitespace(tag) {
@@ -26159,7 +26154,7 @@ function uniqueId(value) {
   return id;
 }
 
-var specialContentTags = createMapFromString('script,style');
+var specialContentTags = createMapFromString('wxs,script,style');
 
 function createSortFns(value, options, uidIgnore, uidAttr) {
   var attrChains = options.sortAttributes && Object.create(null);
@@ -26286,6 +26281,54 @@ function minify(value, options, partialMarkup) {
     ignoredMarkupChunks.push(group1);
     return token;
   });
+  function minifyExpression(code) {
+    if (!code) {
+      return code;
+    }
+    var result = UglifyJS.minify(code, {
+      output: {
+        quote_style: 3
+      },
+      compress: {
+        expression: true,
+      }
+    });
+    if (result.error) {
+      throw new Error();
+    }
+
+    var resultCode = result.code.replace(/;$/, '');
+    if (!resultCode) {
+      throw new Error();
+    }
+    return resultCode;
+  }
+
+  var customExpressionFragments = (options.customExpressionFragments || []).map(function(re) {
+    return re.source;
+  });
+  if (customExpressionFragments.length) {
+    var reCustomExpression = new RegExp('\\s*(?:' + customExpressionFragments.join('|') + ')+\\s*', 'g');
+
+    value = value.replace(reCustomExpression, function(match) {
+      try {
+        return minifyExpression(match);
+      }
+      catch (err) {
+        //
+      }
+
+      try {
+        var re = minifyExpression('({' + match + '})');
+        return re.substr(2, re.length - 4);
+      }
+      catch (err) {
+        //
+      }
+
+      return match;
+    });
+  }
 
   var customFragments = options.ignoreCustomFragments.map(function(re) {
     return re.source;
